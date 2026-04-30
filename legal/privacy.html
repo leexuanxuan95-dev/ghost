@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>privacy policy — ghost</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="index,follow">
+<link rel="stylesheet" href="_style.css">
+</head>
+<body>
+<main class="legal-page">
+
+  <div class="crumb"><a href="../pages.html">← ghost</a> · privacy policy</div>
+
+  <h1>privacy<em>.</em></h1>
+  <div class="meta">effective: 2026-04-28 · version 1.0 · last updated: 2026-04-28</div>
+
+  <p class="dim">ghost is built on a single promise: nothing leaves your phone. this policy explains, in plain language, what that means in practice. the short version is that ghost has nothing to share with anyone because it never collects anything to begin with.</p>
+
+  <div class="pullbox">
+    <p><strong>at a glance:</strong> no servers · no analytics · no telemetry · no advertising · no third-party sdks · no account · no sign-in · no data leaves the device.</p>
+  </div>
+
+  <h2><span class="num">01</span>what we collect</h2>
+  <p><strong>nothing.</strong> ghost does not have a server. it does not phone home. it does not contain analytics, crash reporting, advertising sdks, attribution sdks, or any other library that transmits information off your device. when you write a message, it is written to a file on your phone and stays there. when you delete a ghost, the file is removed from your phone and that is the end of it.</p>
+
+  <h2><span class="num">02</span>what we store on your device</h2>
+  <p>the following lives only on your device, in your app's private container, encrypted with the standard <span style="font-family:var(--mono)">.completeFileProtection</span> attribute (apple's strongest at-rest protection class):</p>
+  <ul>
+    <li>the names and optional photos you assigned to each ghost (photos are blurred at render time and never uploaded)</li>
+    <li>the messages you wrote, the imagined replies (if you opted in), timestamps, and the platform context you selected</li>
+    <li>a single boolean for whether you've completed onboarding</li>
+    <li>a single boolean for whether you've made the one-time unlock purchase (this is also stored independently in your apple id's purchase history)</li>
+  </ul>
+  <p>that's the complete list. if you delete the app, all of it goes with it. there is no copy on a server because there is no server.</p>
+
+  <h2><span class="num">03</span>imagined replies</h2>
+  <p>when "imagined reply" is enabled, ghost generates fictional messages by selecting words from on-device vocabulary lists and assembling them into sentences using on-device templates. <strong>no api is called.</strong> <strong>no large language model is queried.</strong> no part of what you wrote is sent anywhere — including, specifically, to anthropic, openai, google, apple, or any other ai provider. the engine runs entirely in swift on your phone. see our <a href="imagined-reply-disclosure.html">imagined-reply disclosure</a> for the technical detail.</p>
+
+  <h2><span class="num">04</span>the real people you write to</h2>
+  <p>ghost does not contact, message, notify, or in any way reach the real-world people whose names you may use inside the app. ghost has no access to your contacts, your phone book, your messaging apps, or any other source of communication. the names and photos you enter are local labels only — they exist purely to help <em>you</em> remember who a thread was for. nobody else sees them, ever, because there is no "else" with access.</p>
+
+  <h2><span class="num">05</span>purchases</h2>
+  <p>ghost uses apple's storekit 2 for the one-time unlock purchase. apple receives the purchase event because apple processes the payment — that is between you and apple under <a href="https://www.apple.com/legal/privacy/">apple's privacy policy</a>. ghost itself only ever sees a yes/no flag indicating whether the unlock has been verified. we never see your name, email, payment method, or location.</p>
+
+  <h2><span class="num">06</span>permissions we ask for</h2>
+  <ul>
+    <li><strong>photos (optional, only when you tap "add face"):</strong> we read a single image you choose, blur it locally, and store the blurred bytes inside the ghost record on your device. we do not access your photo library otherwise. you can decline this and the app works exactly the same.</li>
+    <li><strong>everything else:</strong> ghost does not request notifications, location, contacts, microphone, camera, calendar, or any other permission.</li>
+  </ul>
+
+  <h2><span class="num">07</span>children</h2>
+  <p>ghost is rated 17+ in the app store. it deals with adult themes around relationships, loss, and the words people don't say. it is not intended for, and not directed to, anyone under 13 (or under 16 in the eu/uk).</p>
+
+  <h2><span class="num">08</span>your rights (gdpr / ccpa / etc.)</h2>
+  <p>because ghost has no servers and we do not collect your data, gdpr "data subject access requests," ccpa "right to know" requests, and analogous rights under other regimes are functionally answered by the structure of the app: <strong>we have no record of you, and there is nothing for us to disclose, export, or delete on your behalf.</strong> the data on your device is yours; you can delete it any time by deleting a ghost or uninstalling the app.</p>
+
+  <h2><span class="num">09</span>changes to this policy</h2>
+  <p>if we ever change this policy in a material way — in particular, if we ever add anything that does collect data — we will update the version number and effective date above, post the new version at this url, and call it out plainly in the app's release notes. we will not silently start collecting data.</p>
+
+  <h2><span class="num">10</span>contact</h2>
+  <p>questions, complaints, or corrections — <a href="mailto:hello@ghost.app">hello@ghost.app</a>. we read everything that arrives.</p>
+
+  <div class="footer-row">
+    <a href="../pages.html">back to ghost</a>
+    <a href="terms.html">terms of use</a>
+    <a href="eula.html">eula</a>
+    <a href="imagined-reply-disclosure.html">imagined-reply disclosure</a>
+    <a href="mailto:hello@ghost.app">contact</a>
+  </div>
+</main>
+</body>
+</html>

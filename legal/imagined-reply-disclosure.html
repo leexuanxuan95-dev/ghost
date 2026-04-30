@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>imagined-reply disclosure — ghost</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="index,follow">
+<link rel="stylesheet" href="_style.css">
+</head>
+<body>
+<main class="legal-page">
+
+  <div class="crumb"><a href="../pages.html">← ghost</a> · imagined-reply disclosure</div>
+
+  <h1>imagined<em>.</em></h1>
+  <div class="meta">effective: 2026-04-28 · version 1.0 · for the public, and for app review</div>
+
+  <p class="dim">this page exists for two readers: a user who wants to understand how the "imagined reply" feature works, and an apple app reviewer evaluating whether the app complies with guidelines 1.1, 1.1.6, 4.0, 5.1.1, and 5.6. it is written to be useful to both.</p>
+
+  <div class="pullbox">
+    <p><strong>summary for app review:</strong></p>
+    <p>imagined reply is an <strong>opt-in</strong> feature, <strong>off by default</strong>. when on, it generates clearly-labeled fictional bubbles using a local word-bank engine (<span style="font-family:var(--mono)">ReplyEngine.swift</span> + <span style="font-family:var(--mono)">Templates.swift</span> + <span style="font-family:var(--mono)">WordBanks.swift</span>). it never queries an external api. it never contacts the real-world person whose name the user assigned to a thread. every imagined bubble carries a visible "imagined" tag in the ui (<span style="font-family:var(--mono)">MessageBubble.isImagined</span>), and the persisted message model has a <span style="font-family:var(--mono)">Bool</span> field of the same name so the label cannot be lost across sessions. the feature is positioned and worded as fiction, not as a re-creation of any specific person.</p>
+  </div>
+
+  <h2><span class="num">01</span>what the user experiences</h2>
+  <p>when the user taps the "imagined reply" checkbox while creating a ghost — and only then — the app will, after the user sends a message, render a small number of fictional bubbles on the recipient side of the chat. each bubble:</p>
+  <ul>
+    <li>appears with a typing-indicator first, then resolves to a sentence</li>
+    <li>has a small monospace label "<em>imagined</em>" rendered immediately below it</li>
+    <li>is stored on disk with <span style="font-family:var(--mono)">isImagined: true</span></li>
+    <li>is generated locally and is never sent to anyone</li>
+  </ul>
+  <p>the checkbox itself is described in copy as: <em>"fictional. words assembled on your phone, never theirs, never sent. each bubble is labeled 'imagined'. off by default."</em></p>
+
+  <h2><span class="num">02</span>how the engine works (technical)</h2>
+  <p>the imagined reply system is a deterministic-where-possible, slot-based template engine. it has three parts:</p>
+  <ul>
+    <li><strong>tone profile</strong> (<span style="font-family:var(--mono)">ToneProfile.swift</span>): inspects the user's most recent message for a few sentiment keywords ("sorry", "miss", "fuck", "closure", etc.) and selects one of six neutral sentiment buckets (neutral, longing, apologetic, angry, closure, sad).</li>
+    <li><strong>templates</strong> (<span style="font-family:var(--mono)">Templates.swift</span>): each sentiment bucket has 6–12 sentence skeletons with named slots like <span style="font-family:var(--mono)">{opener}</span>, <span style="font-family:var(--mono)">{filler}</span>, <span style="font-family:var(--mono)">{regret}</span>.</li>
+    <li><strong>word banks</strong> (<span style="font-family:var(--mono)">WordBanks.swift</span>): each slot has 20–50 generic candidate words/phrases. one is chosen at random, never specific to any real person.</li>
+  </ul>
+  <p>the engine is plain swift. it imports only <span style="font-family:var(--mono)">Foundation</span>. there is no <span style="font-family:var(--mono)">URLSession</span> call anywhere in the codebase. there is no model file (no <span style="font-family:var(--mono)">.mlmodel</span>, no <span style="font-family:var(--mono)">.gguf</span>, no <span style="font-family:var(--mono)">.bin</span>). there is no on-device large language model. there is no integration with apple intelligence, openai, anthropic, google, or any other ai provider.</p>
+
+  <h2><span class="num">03</span>what the engine cannot do</h2>
+  <p>the engine has no memory of who the user is writing to beyond the generic tone bucket selected from the platform context. it cannot:</p>
+  <ul>
+    <li>imitate a specific person's writing style — it has never been trained on anyone's data</li>
+    <li>reference real events from the user's life — it has no access to anything outside the current message text</li>
+    <li>produce content that "feels like" the actual recipient — outputs are intentionally generic, drawn from the same word pools regardless of the ghost's name</li>
+    <li>send anything anywhere — it returns strings to the swift caller, which writes them into the local <span style="font-family:var(--mono)">Message</span> store</li>
+  </ul>
+
+  <h2><span class="num">04</span>why we provide it at all</h2>
+  <p>some users — particularly those processing the silence after a relationship ends — find that an empty chat surface intensifies rumination. having a fictional, clearly-labeled completion of the "what would they say" loop, generated by the user's own phone from generic word banks, helps close the open thread mentally without involving the real person. the visible "imagined" tag on every reply preserves the boundary between fiction and reality.</p>
+
+  <h2><span class="num">05</span>what we do <em>not</em> claim</h2>
+  <p>ghost does not claim:</p>
+  <ul>
+    <li>that imagined replies represent what the real person would actually say</li>
+    <li>that the feature provides therapeutic, medical, or psychological benefit</li>
+    <li>that the feature substitutes for professional support</li>
+    <li>that the feature is "ai" in the foundation-model sense, or that it is "intelligent"</li>
+  </ul>
+
+  <h2><span class="num">06</span>safeguards</h2>
+  <ul>
+    <li><strong>opt-in:</strong> off by default; turning it on requires an explicit checkbox tap during ghost creation</li>
+    <li><strong>visible labeling:</strong> every imagined bubble has a "<em>imagined</em>" tag rendered directly below it (see <span style="font-family:var(--mono)">MessageBubble.swift</span> when <span style="font-family:var(--mono)">isImagined</span> is true)</li>
+    <li><strong>persistent labeling:</strong> the <span style="font-family:var(--mono)">isImagined</span> bool is part of the persisted <span style="font-family:var(--mono)">Message</span> codable, so labels survive app restarts</li>
+    <li><strong>local-only:</strong> the engine cannot reach external services because the app makes no network requests</li>
+    <li><strong>de-branded contexts:</strong> the platform picker uses generic labels ("dating app", "messenger", "encrypted chat", "work", "friend") rather than third-party brand names</li>
+  </ul>
+
+  <h2><span class="num">07</span>relevant source files</h2>
+  <ul>
+    <li><span style="font-family:var(--mono)">GHOST/Reply/ReplyEngine.swift</span> — orchestrator</li>
+    <li><span style="font-family:var(--mono)">GHOST/Reply/Templates.swift</span> — sentence skeletons</li>
+    <li><span style="font-family:var(--mono)">GHOST/Reply/WordBanks.swift</span> — slot vocabularies</li>
+    <li><span style="font-family:var(--mono)">GHOST/Reply/ToneProfile.swift</span> — sentiment classifier (keyword-based)</li>
+    <li><span style="font-family:var(--mono)">GHOST/Models/Message.swift</span> — <span style="font-family:var(--mono)">isImagined: Bool</span> field</li>
+    <li><span style="font-family:var(--mono)">GHOST/Components/MessageBubble.swift</span> — visible "imagined" tag</li>
+    <li><span style="font-family:var(--mono)">GHOST/Views/NewGhostView.swift</span> — opt-in checkbox</li>
+    <li><span style="font-family:var(--mono)">GHOST/Views/ComposeView.swift</span> — sets <span style="font-family:var(--mono)">isImagined: true</span> on every generated reply</li>
+  </ul>
+
+  <h2><span class="num">08</span>contact for app review</h2>
+  <p>if you are reviewing this app and need any clarification, or want a build with imagined reply pre-enabled and pre-seeded for screenshot review, please contact <a href="mailto:hello@ghost.app">hello@ghost.app</a> and we will respond within 24 hours.</p>
+
+  <div class="footer-row">
+    <a href="../pages.html">back to ghost</a>
+    <a href="privacy.html">privacy</a>
+    <a href="terms.html">terms</a>
+    <a href="eula.html">eula</a>
+    <a href="mailto:hello@ghost.app">contact</a>
+  </div>
+</main>
+</body>
+</html>

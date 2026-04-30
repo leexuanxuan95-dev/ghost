@@ -1,0 +1,1638 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ghost — unsent messages · a private journal for ios</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="ghost is a private ios journal for the messages you write but never send. nothing leaves your phone — no servers, no analytics, no posting.">
+<meta name="keywords" content="unsent, unsent messages, unsent letters, private journal, breakup app, closure journal, no contact, ios diary">
+<meta property="og:title" content="ghost — for the texts you'll never send.">
+<meta property="og:description" content="a private ios journal for unsent messages. nothing leaves the phone.">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="ghost — for the texts you'll never send.">
+<meta name="twitter:description" content="a private ios journal for unsent messages.">
+
+<style>
+  :root {
+    /* — app palette (the phone interior stays funereal) — */
+    --tombstone:        #1a1a1c;
+    --tombstone-deep:   #0c0c0e;
+    --ghost-white:      #f5f5f5;
+    --cold-blue:        #6b8fb0;
+    --cold-blue-glow:   rgba(107,143,176,0.30);
+    --warning-red:      #b53d3d;
+    --dim:              rgba(245,245,245,0.46);
+    --dim-2:            rgba(245,245,245,0.22);
+    --hairline:         rgba(245,245,245,0.10);
+    --bubble-mine:      var(--cold-blue);
+    --bubble-them:      rgba(255,255,255,0.08);
+    --place-stroke:     rgba(245,245,245,0.18);
+    --place-fill:       rgba(245,245,245,0.04);
+
+    /* — editorial palette (the page around the phone) — */
+    --bone:        #ede4d2;
+    --parchment:   #e1d5b6;
+    --rose:        #d3a89e;
+    --sage:        #9eada1;
+    --oxblood:     #4a1f1f;
+    --slate:       #3a4148;
+    --taupe:       #b59e85;
+    --forest:      #2f3e35;
+    --lavender:    #b1a6b6;
+
+    --ink:         #1a1a1c;
+    --ink-dim:     rgba(26,26,28,0.60);
+    --ink-faint:   rgba(26,26,28,0.38);
+    --ink-hair:    rgba(26,26,28,0.18);
+
+    --paper-light: rgba(245,236,221,0.92);
+    --paper-dim:   rgba(245,236,221,0.55);
+    --paper-faint: rgba(245,236,221,0.30);
+    --paper-hair:  rgba(245,236,221,0.18);
+
+    --mono:             ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --sans:             -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", system-ui, sans-serif;
+    --serif:            "EB Garamond", Garamond, "Iowan Old Style", Georgia, serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    margin: 0;
+    background: var(--bone);
+    color: var(--ink);
+    font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    line-height: 1.4;
+  }
+
+  /* paper texture on light sections */
+  .paper {
+    position: relative;
+  }
+  .paper::after {
+    content: "";
+    position: absolute; inset: 0;
+    pointer-events: none;
+    opacity: 0.05;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='1.5' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+    mix-blend-mode: multiply;
+  }
+
+  /* — section tones — each section paints its own background — */
+  .tone-bone     { background: var(--bone);     color: var(--ink); }
+  .tone-sage     { background: var(--sage);     color: var(--ink); }
+  .tone-rose     { background: var(--rose);     color: var(--ink); }
+  .tone-oxblood  { background: var(--oxblood);  color: var(--paper-light); }
+  .tone-parch    { background: var(--parchment);color: var(--ink); }
+  .tone-slate    { background: var(--slate);    color: var(--paper-light); }
+  .tone-taupe    { background: var(--taupe);    color: var(--ink); }
+  .tone-forest   { background: var(--forest);   color: var(--paper-light); }
+  .tone-lavender { background: var(--lavender); color: var(--ink); }
+
+  /* sections with light text get inverted helpers */
+  .tone-oxblood, .tone-slate, .tone-forest {
+    --section-dim:   var(--paper-dim);
+    --section-faint: var(--paper-faint);
+    --section-hair:  var(--paper-hair);
+  }
+  .tone-bone, .tone-sage, .tone-rose, .tone-parch, .tone-taupe, .tone-lavender {
+    --section-dim:   var(--ink-dim);
+    --section-faint: var(--ink-faint);
+    --section-hair:  var(--ink-hair);
+  }
+
+  ::selection { background: var(--cold-blue); color: #fff; }
+
+  a { color: inherit; text-decoration: none; }
+
+  /* ─── page chrome ────────────────────────────────── */
+  .topbar {
+    position: sticky; top: 0; z-index: 100;
+    backdrop-filter: blur(14px) saturate(1.2);
+    -webkit-backdrop-filter: blur(14px) saturate(1.2);
+    background: rgba(12,12,14,0.78);
+    border-bottom: 0.5px solid rgba(255,255,255,0.08);
+    color: var(--ghost-white);
+  }
+  .topbar-inner {
+    max-width: 1320px; margin: 0 auto;
+    padding: 14px 32px;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 24px;
+  }
+  .brand {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.18em;
+    color: var(--ghost-white);
+  }
+  .brand .dot { color: var(--cold-blue); }
+  nav.index {
+    display: flex; gap: 20px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: rgba(245,245,245,0.5);
+  }
+  nav.index a:hover { color: var(--ghost-white); }
+  .topbar-meta {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: rgba(245,245,245,0.5);
+  }
+
+  /* ─── hero ──────────────────────────────────────── */
+  .hero {
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-inner {
+    max-width: 1320px;
+    margin: 0 auto;
+    padding: 110px 32px 100px;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 28px;
+    position: relative;
+    z-index: 1;
+  }
+  .hero .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    color: var(--section-dim);
+    text-transform: lowercase;
+  }
+  .hero h1 {
+    margin: 0;
+    font-family: var(--sans);
+    font-weight: 200;
+    font-size: clamp(82px, 14vw, 200px);
+    letter-spacing: -0.05em;
+    line-height: 0.9;
+    color: var(--ink);
+  }
+  .hero h1 em {
+    font-family: var(--serif);
+    font-style: italic;
+    font-weight: 400;
+    color: var(--oxblood);
+  }
+  .hero p.lede {
+    max-width: 640px;
+    font-size: 22px;
+    line-height: 1.45;
+    color: var(--ink);
+    font-weight: 300;
+  }
+  .hero p.lede em {
+    font-family: var(--serif);
+    font-style: italic;
+    color: var(--ink-dim);
+  }
+  .hero .meta-row {
+    display: flex; gap: 36px;
+    margin-top: 24px;
+    flex-wrap: wrap;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--section-dim);
+    letter-spacing: 0.1em;
+  }
+  .hero .meta-row span strong {
+    color: var(--ink);
+    font-weight: 500;
+    margin-right: 6px;
+  }
+  .hero-rule {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 0.5px;
+    background: var(--ink-hair);
+  }
+  /* an accent block top-right of hero, for color */
+  .hero::before {
+    content: "";
+    position: absolute;
+    top: -120px; right: -180px;
+    width: 520px; height: 520px;
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--rose), transparent 65%);
+    opacity: 0.55;
+    z-index: 0;
+  }
+  .hero::after {
+    content: "";
+    position: absolute;
+    bottom: -160px; left: -120px;
+    width: 480px; height: 480px;
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--sage), transparent 65%);
+    opacity: 0.55;
+    z-index: 0;
+  }
+
+  /* ─── section per screen ────────────────────────── */
+  section.screen-section {
+    position: relative;
+  }
+  .section-inner {
+    max-width: 1320px;
+    margin: 0 auto;
+    padding: 110px 32px;
+    display: grid;
+    grid-template-columns: 1fr 460px;
+    gap: 80px;
+    align-items: center;
+    position: relative;
+    z-index: 1;
+  }
+  section.screen-section.flip .section-inner {
+    grid-template-columns: 460px 1fr;
+  }
+  section.screen-section.flip .copy { order: 2; }
+  section.screen-section.flip .stage-wrap { order: 1; }
+
+  @media (max-width: 980px) {
+    .section-inner, section.screen-section.flip .section-inner {
+      grid-template-columns: 1fr;
+      gap: 40px;
+    }
+    section.screen-section.flip .copy { order: 0; }
+    section.screen-section.flip .stage-wrap { order: 0; }
+  }
+
+  .copy .num {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 72px;
+    color: var(--section-faint);
+    line-height: 1;
+    font-weight: 400;
+  }
+  .copy h2 {
+    font-size: 40px;
+    font-weight: 300;
+    letter-spacing: -0.02em;
+    margin: 14px 0 20px;
+    line-height: 1.08;
+  }
+  .copy h2 em {
+    font-family: var(--serif);
+    font-style: italic;
+    font-weight: 400;
+    color: var(--section-dim);
+  }
+  .copy p {
+    color: var(--section-dim);
+    max-width: 480px;
+    font-size: 16px;
+    line-height: 1.65;
+    margin: 0 0 14px;
+  }
+  .copy p .mono { color: inherit; }
+  .copy .tag {
+    display: inline-flex;
+    margin-top: 16px;
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.12em;
+    color: var(--section-dim);
+    text-transform: lowercase;
+    flex-wrap: wrap;
+  }
+  .copy .tag span {
+    border: 0.5px solid var(--section-hair);
+    padding: 4px 10px;
+    border-radius: 999px;
+  }
+
+  /* a thin hairline between sections — visible on every tone */
+  .section-rule {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 0.5px;
+    background: var(--section-hair);
+  }
+
+  /* a small decorative pull-quote band between certain sections */
+  .pullquote {
+    padding: 60px 32px;
+    text-align: center;
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: clamp(22px, 3vw, 30px);
+    color: var(--section-dim);
+    line-height: 1.4;
+    max-width: 920px;
+    margin: 0 auto;
+  }
+  .pullquote .src {
+    display: block;
+    margin-top: 14px;
+    font-family: var(--mono);
+    font-style: normal;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    color: var(--section-faint);
+    text-transform: lowercase;
+  }
+
+  /* ─── phone frame ──────────────────────────────── */
+  .stage-wrap {
+    display: flex;
+    justify-content: center;
+  }
+  .phone-shadow {
+    position: relative;
+    transition: transform 600ms cubic-bezier(.2,.8,.2,1);
+  }
+  .stage-wrap:hover .phone-shadow {
+    transform: translateY(-6px);
+  }
+  /* on dark sections: a cold-blue aura behind the phone */
+  .tone-oxblood .phone-shadow::after,
+  .tone-slate   .phone-shadow::after,
+  .tone-forest  .phone-shadow::after {
+    content: "";
+    position: absolute;
+    inset: -50px -30px -10px -30px;
+    background: radial-gradient(closest-side, var(--cold-blue-glow), transparent 70%);
+    z-index: -1;
+    filter: blur(36px);
+    opacity: 0.7;
+  }
+  /* on light sections: an inky cast shadow for the phone */
+  .tone-bone .phone-shadow::after,
+  .tone-sage .phone-shadow::after,
+  .tone-rose .phone-shadow::after,
+  .tone-parch .phone-shadow::after,
+  .tone-taupe .phone-shadow::after,
+  .tone-lavender .phone-shadow::after {
+    content: "";
+    position: absolute;
+    left: 30px; right: 30px; bottom: -20px; height: 30px;
+    background: radial-gradient(closest-side, rgba(26,26,28,0.35), transparent 70%);
+    z-index: -1;
+    filter: blur(20px);
+  }
+
+  .phone {
+    width: 393px;
+    height: 800px;
+    border-radius: 56px;
+    background: linear-gradient(160deg, #2a2a2c, #111113 60%, #1f1f21);
+    padding: 11px;
+    position: relative;
+    box-shadow:
+      inset 0 0 0 1px rgba(255,255,255,0.06),
+      inset 0 0 0 2.4px #0a0a0c,
+      0 40px 80px -20px rgba(0,0,0,0.75),
+      0 12px 30px -10px rgba(0,0,0,0.6);
+  }
+  .phone::before, .phone::after {
+    content: "";
+    position: absolute;
+    background: #1a1a1c;
+    border-radius: 2px;
+  }
+  .phone::before {
+    left: -2px; top: 130px;
+    width: 3px; height: 64px;
+  }
+  .phone::after {
+    right: -2px; top: 200px;
+    width: 3px; height: 90px;
+  }
+
+  .screen {
+    width: 100%; height: 100%;
+    border-radius: 45px;
+    background: var(--tombstone);
+    overflow: hidden;
+    position: relative;
+    color: var(--ghost-white);
+  }
+
+  /* status bar */
+  .status {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 54px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 28px;
+    z-index: 10;
+    pointer-events: none;
+  }
+  .status .time {
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: 15px;
+  }
+  .status .icons {
+    display: flex; align-items: center; gap: 6px;
+    color: var(--ghost-white);
+  }
+  .status .icons svg { display: block; }
+
+  .island {
+    position: absolute;
+    top: 11px; left: 50%;
+    transform: translateX(-50%);
+    width: 122px; height: 35px;
+    background: #000;
+    border-radius: 999px;
+    z-index: 11;
+    box-shadow: inset 0 0 0 0.5px rgba(255,255,255,0.05);
+  }
+  .home-bar {
+    position: absolute;
+    bottom: 7px; left: 50%;
+    transform: translateX(-50%);
+    width: 134px; height: 5px;
+    background: var(--ghost-white);
+    border-radius: 999px;
+    opacity: 0.78;
+    z-index: 12;
+  }
+
+  .stage {
+    position: absolute;
+    top: 56px; left: 0; right: 0; bottom: 0;
+  }
+
+  /* ─── shared text utilities ───────────────────── */
+  .mono   { font-family: var(--mono); }
+  .serif  { font-family: var(--serif); font-style: italic; font-weight: 400; }
+  .dim    { color: var(--dim); }
+  .row-between { display: flex; align-items: center; justify-content: space-between; }
+
+  .btn {
+    display: inline-block;
+    padding: 14px 30px;
+    border: 0.6px solid rgba(245,245,245,0.55);
+    color: var(--ghost-white);
+    font-family: var(--mono);
+    font-size: 13px;
+    background: transparent;
+    transition: background 200ms;
+  }
+  .btn--full {
+    display: block; width: 100%;
+    text-align: center;
+    padding: 16px;
+  }
+  .btn--danger { color: var(--warning-red); border-color: rgba(181,61,61,0.55); }
+
+  /* ─── 01 onboarding ───────────────────────────── */
+  .s-onboarding .stage {
+    display: flex; flex-direction: column;
+    padding: 60px 36px 50px;
+  }
+  .s-onboarding .lines {
+    margin-top: auto;
+    display: flex; flex-direction: column; gap: 22px;
+    font-size: 22px;
+    line-height: 1.36;
+    font-weight: 400;
+  }
+  .s-onboarding .lines .l1 { animation: lineIn 1.2s 0.4s both ease-out; }
+  .s-onboarding .lines .l2 { animation: lineIn 1.2s 1.4s both ease-out; }
+  .s-onboarding .lines .l3 { animation: lineIn 1.2s 2.4s both ease-out; }
+  .s-onboarding .footer {
+    margin-top: auto;
+    display: flex; justify-content: center;
+    padding-top: 60px;
+    animation: lineIn 1s 3.4s both ease-out;
+  }
+  @keyframes lineIn { from { opacity: 0; } to { opacity: 1; } }
+
+  /* ─── header pattern (graveyard) ───────────────── */
+  .header-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 6px 26px 0;
+  }
+  .pill {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--dim);
+    border: 0.5px solid var(--hairline);
+    border-radius: 999px;
+    padding: 5px 12px;
+  }
+  .title-block {
+    padding: 24px 26px 0;
+  }
+  .title {
+    font-size: 30px;
+    font-weight: 400;
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+  .title-sub {
+    margin-top: 6px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--dim);
+    letter-spacing: 0.04em;
+  }
+
+  /* ─── 02 empty graveyard ──────────────────────── */
+  .empty-center {
+    display: flex; flex-direction: column;
+    align-items: center; gap: 14px;
+    padding: 90px 28px 0;
+    text-align: center;
+  }
+  .empty-center .epi {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 22px;
+    color: var(--dim);
+  }
+  .empty-center .hint {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--dim);
+  }
+  .plus-orb {
+    position: absolute;
+    right: 26px; bottom: 36px;
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.08);
+    border: 0.6px solid rgba(245,245,245,0.28);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--ghost-white);
+    font-size: 28px; font-weight: 200;
+    box-shadow:
+      inset 0 0 30px rgba(107,143,176,0.06),
+      0 6px 20px rgba(0,0,0,0.4);
+  }
+
+  /* ─── 03 populated graveyard ──────────────────── */
+  .grid {
+    padding: 26px 20px 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .tomb {
+    border: 0.5px solid var(--hairline);
+    padding: 22px 12px;
+    text-align: center;
+    display: flex; flex-direction: column;
+    align-items: center; gap: 12px;
+    position: relative;
+  }
+  .tomb::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 16px; height: 1px;
+    background: var(--hairline);
+  }
+  .tomb .av {
+    width: 60px; height: 60px;
+    border-radius: 50%;
+    background:
+      radial-gradient(circle at 30% 30%, rgba(107,143,176,0.20), rgba(255,255,255,0.05) 60%);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--dim);
+    filter: blur(0.4px);
+  }
+  .tomb .name {
+    font-size: 15px;
+    color: var(--ghost-white);
+  }
+  .tomb .where {
+    font-family: var(--mono);
+    font-size: 9.5px;
+    color: var(--dim);
+    letter-spacing: 0.04em;
+  }
+  .tomb .sent {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: rgba(255,255,255,0.28);
+    letter-spacing: 0.05em;
+  }
+
+  /* ─── 04 reminder ─────────────────────────────── */
+  .s-reminder .stage {
+    display: flex; flex-direction: column;
+    justify-content: center;
+    padding: 36px 36px 30px;
+    gap: 36px;
+  }
+  .reminder-question {
+    text-align: center;
+    display: flex; flex-direction: column;
+    gap: 28px;
+    margin-top: auto;
+  }
+  .reminder-question .top {
+    font-size: 22px;
+    line-height: 1.35;
+  }
+  .reminder-question .sub {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 24px;
+    color: var(--dim);
+  }
+  .reminder-actions {
+    display: flex; gap: 12px;
+    margin-top: auto;
+  }
+  .reminder-actions .btn { flex: 1; padding: 16px; }
+
+  /* ─── 05 compose ──────────────────────────────── */
+  .compose-header {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 22px 14px;
+    border-bottom: 0.5px solid var(--hairline);
+  }
+  .compose-header .av {
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    background:
+      radial-gradient(circle at 30% 30%, rgba(107,143,176,0.25), rgba(255,255,255,0.05) 60%);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--dim);
+    filter: blur(0.4px);
+  }
+  .compose-header .who { font-size: 15px; }
+  .compose-header .where {
+    font-family: var(--mono);
+    font-size: 9.5px;
+    color: var(--dim);
+    margin-top: 2px;
+  }
+  .compose-body {
+    padding: 14px 0 8px;
+    display: flex; flex-direction: column; gap: 8px;
+    overflow: hidden;
+  }
+  .epigraph {
+    text-align: center;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--dim);
+    margin-bottom: 6px;
+    letter-spacing: 0.04em;
+  }
+  .placeholder-bubble {
+    align-self: flex-start;
+    margin-left: 16px;
+    height: 28px;
+    border-radius: 16px;
+    background: var(--place-fill);
+    border: 0.5px dashed var(--place-stroke);
+    opacity: 0.7;
+  }
+  .placeholder-bubble.w-a { width: 90px; }
+  .placeholder-bubble.w-b { width: 124px; }
+
+  .bubble {
+    max-width: 260px;
+    padding: 9px 14px;
+    border-radius: 18px;
+    font-size: 14.5px;
+    line-height: 1.36;
+    word-wrap: break-word;
+  }
+  .bubble.me {
+    background: var(--bubble-mine);
+    color: #fff;
+    align-self: flex-end;
+    margin-right: 16px;
+    box-shadow: 0 1px 0 rgba(0,0,0,0.15);
+  }
+  .bubble.them {
+    background: var(--bubble-them);
+    color: var(--ghost-white);
+    align-self: flex-start;
+    margin-left: 16px;
+  }
+
+  /* compose section (s05) — chat uses the editorial palette:
+     lavender as section bg, oxblood for "me", rose for "them" */
+  .tone-lavender .bubble.me {
+    background: var(--oxblood);
+    color: var(--paper-light);
+  }
+  .tone-lavender .bubble.them {
+    background: var(--rose);
+    color: var(--ink);
+  }
+  .tone-lavender .typing {
+    background: var(--rose);
+  }
+  .tone-lavender .typing span {
+    background: var(--ink);
+    opacity: 0.5;
+  }
+
+  .typing {
+    align-self: flex-start;
+    margin-left: 16px;
+    background: var(--bubble-them);
+    border-radius: 18px;
+    padding: 11px 14px;
+    display: flex; gap: 4px; align-items: center;
+  }
+  .typing span {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--ghost-white);
+    opacity: 0.4;
+    animation: dot 1.2s infinite ease-in-out;
+  }
+  .typing span:nth-child(2) { animation-delay: 0.18s; }
+  .typing span:nth-child(3) { animation-delay: 0.36s; }
+  @keyframes dot {
+    0%, 60%, 100% { opacity: 0.25; transform: translateY(0); }
+    30% { opacity: 0.95; transform: translateY(-2px); }
+  }
+
+  .input-area {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    padding: 6px 14px 22px;
+    background: var(--tombstone);
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .send-handle { text-align: center; padding: 6px 0 4px; }
+  .send-handle .lab {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--dim);
+    letter-spacing: 0.04em;
+  }
+  .send-handle .bar {
+    margin: 8px 38px 0;
+    height: 3px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 999px;
+    overflow: hidden;
+    position: relative;
+  }
+  .send-handle .bar::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    width: 0;
+    background: var(--cold-blue);
+    animation: hold 4s infinite ease-in-out;
+  }
+  @keyframes hold {
+    0%,10% { width: 0; }
+    50%   { width: 100%; }
+    60%   { width: 100%; opacity: 1; }
+    70%   { width: 100%; opacity: 0; }
+    71%   { width: 0; opacity: 1; }
+    100%  { width: 0; }
+  }
+  .input-box {
+    border: 0.6px solid rgba(255,255,255,0.18);
+    border-radius: 18px;
+    padding: 10px 14px;
+    min-height: 38px;
+    color: var(--dim);
+    font-size: 15px;
+  }
+
+  /* ─── 06 sending / disintegration ─────────────── */
+  .s-sending .stage {
+    display: flex; flex-direction: column;
+    justify-content: center; align-items: center;
+    padding: 40px;
+    gap: 80px;
+    background: radial-gradient(closest-side, rgba(107,143,176,0.05), transparent 70%);
+  }
+  .ghost-bubble-stage {
+    position: relative;
+    width: 100%;
+    height: 200px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .ghost-bubble-stage .ghost-bubble {
+    position: absolute;
+    background: var(--bubble-mine);
+    color: #fff;
+    padding: 10px 16px;
+    border-radius: 18px;
+    font-size: 15px;
+    max-width: 240px;
+    text-align: center;
+    opacity: 0.5;
+    filter: blur(2px);
+    transform: scale(0.95);
+  }
+  .particles {
+    position: absolute;
+    inset: 0;
+  }
+  .particles i {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 3px; height: 3px;
+    border-radius: 50%;
+    background: var(--cold-blue);
+    opacity: 0.85;
+    animation: drift 3s infinite ease-out;
+  }
+  @keyframes drift {
+    0%   { transform: translate(0,0) scale(1); opacity: 0.9; }
+    100% { transform: translate(var(--tx), var(--ty)) scale(0.4); opacity: 0; }
+  }
+  .gone-label {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--dim);
+    letter-spacing: 0.06em;
+    margin-top: auto;
+  }
+
+  /* ─── 07 new ghost ────────────────────────────── */
+  .s-newghost .stage { padding: 0 26px; overflow-y: auto; }
+  .ng-close {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--dim);
+    border: 0.5px solid rgba(245,245,245,0.18);
+    border-radius: 999px;
+    padding: 4px 12px;
+    display: inline-block;
+    margin: 14px 0 18px;
+  }
+  .ng-section { margin-top: 24px; }
+  .ng-section .lab {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--dim);
+    letter-spacing: 0.04em;
+  }
+  .ng-name-input {
+    margin-top: 8px;
+    height: 38px;
+    border-bottom: 0.5px solid rgba(245,245,245,0.3);
+    color: var(--ghost-white);
+    font-size: 22px;
+    display: flex; align-items: flex-end;
+    padding-bottom: 6px;
+  }
+  .ng-name-input::after {
+    content: "";
+    width: 2px; height: 22px;
+    background: var(--cold-blue);
+    margin-bottom: 3px;
+    margin-left: 1px;
+    animation: blink 1s infinite step-end;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+  .ng-photo-row {
+    margin-top: 12px;
+    display: flex; align-items: center; gap: 14px;
+  }
+  .ng-photo-circle {
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.06);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--dim);
+    font-size: 22px;
+  }
+  .ng-photo-row .lab2 {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--dim);
+  }
+  .ng-platform {
+    margin-top: 10px;
+    border-top: 0.5px solid var(--hairline);
+  }
+  .ng-platform .row {
+    padding: 13px 0;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 0.5px solid var(--hairline);
+    font-size: 15px;
+  }
+  .radio {
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    border: 0.5px solid rgba(245,245,245,0.4);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .radio .dot {
+    width: 7px; height: 7px;
+    background: var(--ghost-white);
+    border-radius: 50%;
+  }
+  .haunt-row {
+    margin-top: 14px;
+    display: flex; align-items: flex-start; gap: 14px;
+  }
+  .check {
+    width: 18px; height: 18px;
+    border: 0.5px solid rgba(245,245,245,0.4);
+    border-radius: 4px;
+    flex: none;
+  }
+  .haunt-row .text { font-size: 14.5px; }
+  .haunt-row .desc {
+    margin-top: 4px;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--dim);
+    line-height: 1.5;
+  }
+  .ng-cta {
+    display: block;
+    margin: 26px 0 26px;
+    text-align: center;
+    border: 0.6px solid rgba(245,245,245,0.25);
+    color: var(--dim);
+    padding: 16px;
+    font-family: var(--mono);
+    font-size: 13px;
+  }
+
+  /* ─── 08 paywall ──────────────────────────────── */
+  .s-paywall .stage {
+    padding: 48px 32px 26px;
+    display: flex; flex-direction: column; gap: 22px;
+  }
+  .pw-headline {
+    font-size: 26px;
+    line-height: 1.3;
+    font-weight: 400;
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+  .pw-sub {
+    font-family: var(--serif);
+    font-style: italic;
+    color: var(--dim);
+    font-size: 21px;
+  }
+  .pw-bullets {
+    margin: 8px 0;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  .pw-bullets .b {
+    display: flex; gap: 12px; align-items: flex-start;
+    font-size: 15.5px;
+  }
+  .pw-bullets .b .em {
+    color: var(--dim);
+    font-family: var(--mono);
+  }
+  .pw-foot {
+    display: flex; justify-content: space-between;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--dim);
+  }
+  .pw-fine {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: rgba(255,255,255,0.32);
+    letter-spacing: 0.05em;
+    margin-top: auto;
+  }
+
+  /* ─── 09 fine print ──────────────────────────── */
+  .s-fine .fine-inner {
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 100px 32px 90px;
+  }
+  .s-fine .num {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 72px;
+    color: var(--ink-faint);
+    line-height: 1;
+    font-weight: 400;
+  }
+  .s-fine h2 {
+    font-size: 40px;
+    font-weight: 300;
+    letter-spacing: -0.02em;
+    margin: 14px 0 36px;
+    line-height: 1.08;
+  }
+  .s-fine h2 em {
+    font-family: var(--serif);
+    font-style: italic;
+    font-weight: 400;
+    color: var(--ink-dim);
+  }
+  .s-fine .grid2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 48px;
+  }
+  .s-fine .grid2 p {
+    color: var(--ink-dim);
+    font-size: 15.5px;
+    line-height: 1.65;
+    margin: 0 0 18px;
+    max-width: 480px;
+  }
+  .s-fine .grid2 p strong {
+    color: var(--ink);
+    font-weight: 500;
+  }
+  .s-fine .grid2 a {
+    text-decoration: underline;
+    text-decoration-thickness: 0.5px;
+    text-underline-offset: 2px;
+  }
+  .s-fine .legal-links {
+    margin-top: 44px;
+    border-top: 0.5px solid var(--ink-hair);
+    padding-top: 24px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-faint);
+    letter-spacing: 0.08em;
+    display: flex; gap: 18px; flex-wrap: wrap;
+  }
+  .s-fine .legal-links a {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  @media (max-width: 720px) {
+    .s-fine .grid2 { grid-template-columns: 1fr; gap: 8px; }
+  }
+
+  /* ─── footer ──────────────────────────────────── */
+  footer.foot {
+    background: var(--tombstone-deep);
+    color: rgba(245,245,245,0.5);
+  }
+  .foot-inner {
+    max-width: 1320px;
+    margin: 0 auto;
+    padding: 60px 32px 80px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 20px;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+  }
+  .foot-inner .left { display: flex; gap: 20px; flex-wrap: wrap; }
+  .foot-inner strong { color: var(--ghost-white); font-weight: 400; }
+
+</style>
+</head>
+
+<body>
+
+<!-- ─── top nav ─────────────────────────────────────── -->
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">GHOST<span class="dot">.</span></div>
+    <nav class="index">
+      <a href="#s01">01 onboarding</a>
+      <a href="#s02">02 graveyard</a>
+      <a href="#s03">03 ghosts</a>
+      <a href="#s04">04 reminder</a>
+      <a href="#s05">05 compose</a>
+      <a href="#s06">06 sending</a>
+      <a href="#s07">07 new</a>
+      <a href="#s08">08 upgrade</a>
+      <a href="#s09">09 fine print</a>
+    </nav>
+    <div class="topbar-meta">v1.0 · ios only</div>
+  </div>
+</header>
+
+<!-- ─── hero ────────────────────────────────────────── -->
+<section class="hero tone-bone paper">
+  <div class="hero-inner">
+    <div class="eyebrow">unsent messages · a private journal · ios</div>
+    <h1>ghost<em>.</em></h1>
+    <p class="lede">
+      a private journal for the messages you write but never send.
+      <em>nothing leaves the phone.</em>
+      words fade in 4 seconds, then live in a small dark space — yours alone — until you choose to delete them.
+    </p>
+    <div class="meta-row">
+      <span><strong>local-only</strong> no servers · no analytics</span>
+      <span><strong>imagined replies</strong> fictional · opt-in</span>
+      <span><strong>ios 17+</strong> swiftui</span>
+      <span><strong>$9.99 once</strong> no subscription</span>
+    </div>
+  </div>
+  <div class="hero-rule"></div>
+</section>
+
+<!-- ============================================================
+     01 — ONBOARDING
+============================================================== -->
+<section id="s01" class="screen-section tone-sage paper">
+  <div class="section-inner">
+  <div class="copy">
+    <div class="num">01</div>
+    <h2>three lines, then a door.</h2>
+    <p>onboarding is one screen. the lines fade in over five seconds, one at a time. there is no carousel, no permissions request, no account.</p>
+    <p>the only button reads <em>begin.</em> when you tap it, you are inside. you can never see this screen again.</p>
+    <div class="tag"><span>fade</span><span>5s</span><span>no signup</span></div>
+  </div>
+  <div class="stage-wrap">
+    <div class="phone-shadow">
+      <div class="phone s-onboarding">
+        <div class="screen">
+          <div class="island"></div>
+          <div class="status">
+            <span class="time">9:02</span>
+            <span class="icons">
+              <svg width="17" height="11" viewBox="0 0 17 11"><g fill="currentColor"><rect x="0"  y="7" width="3" height="4" rx="0.5"/><rect x="4"  y="5" width="3" height="6" rx="0.5"/><rect x="8"  y="3" width="3" height="8" rx="0.5"/><rect x="12" y="0" width="3" height="11" rx="0.5"/></g></svg>
+              <svg width="16" height="11" viewBox="0 0 16 11" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round"><path d="M2 6 a8 8 0 0 1 12 0"/><path d="M4 8 a5 5 0 0 1 8 0"/><circle cx="8" cy="10" r="0.8" fill="currentColor"/></svg>
+              <svg width="26" height="12" viewBox="0 0 26 12" fill="none"><rect x="0.5" y="0.5" width="22" height="11" rx="2.5" stroke="currentColor"/><rect x="2"   y="2"   width="19" height="8"  rx="1.2" fill="currentColor"/><rect x="23"  y="3.5" width="2"  height="5"  rx="1"   fill="currentColor"/></svg>
+            </span>
+          </div>
+          <div class="stage">
+            <div class="lines">
+              <div class="l1">this app is for the texts you'll never send.</div>
+              <div class="l2">you can write. you can send.</div>
+              <div class="l3">they will never see.</div>
+            </div>
+            <div class="footer">
+              <span class="btn">begin.</span>
+            </div>
+          </div>
+          <div class="home-bar"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  </div>
+  <div class="section-rule"></div>
+</section>
+
+<!-- ─── pull quote ─── -->
+<aside class="tone-bone paper">
+  <p class="pullquote">
+    "closure has been preached at us for a decade, but no one ever made the ritual."
+    <span class="src">— from the brief</span>
+  </p>
+</aside>
+
+<!-- ============================================================
+     02 — EMPTY GRAVEYARD
+============================================================== -->
+<section id="s02" class="screen-section flip tone-rose paper">
+  <div class="section-inner">
+  <div class="copy">
+    <div class="num">02</div>
+    <h2>the graveyard. <em>empty.</em></h2>
+    <p>your home is a yard. on the first day there is nothing in it — only a single italic line and a small <em>+</em> in the corner.</p>
+    <p>the upgrade pill in the top right is the only commercial gesture. it never raises its voice.</p>
+    <div class="tag"><span>home</span><span>cold</span><span>quiet</span></div>
+  </div>
+  <div class="stage-wrap">
+    <div class="phone-shadow">
+      <div class="phone">
+        <div class="screen">
+          <div class="island"></div>
+          <div class="status">
+            <span class="time">9:04</span>
+            <span class="icons">
+              <svg width="17" height="11" viewBox="0 0 17 11"><g fill="currentColor"><rect x="0"  y="7" width="3" height="4" rx="0.5"/><rect x="4"  y="5" width="3" height="6" rx="0.5"/><rect x="8"  y="3" width="3" height="8" rx="0.5"/><rect x="12" y="0" width="3" height="11" rx="0.5"/></g></svg>
+              <svg width="16" height="11" viewBox="0 0 16 11" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round"><path d="M2 6 a8 8 0 0 1 12 0"/><path d="M4 8 a5 5 0 0 1 8 0"/><circle cx="8" cy="10" r="0.8" fill="currentColor"/></svg>
+              <svg width="26" height="12" viewBox="0 0 26 12" fill="none"><rect x="0.5" y="0.5" width="22" height="11" rx="2.5" stroke="currentColor"/><rect x="2"   y="2"   width="19" height="8"  rx="1.2" fill="currentColor"/><rect x="23"  y="3.5" width="2"  height="5"  rx="1"   fill="currentColor"/></svg>
+            </span>
+          </div>
+          <div class="stage">
+            <div class="header-row"><span></span><span class="pill">upgrade</span></div>
+            <div class="title-block">
+              <h2 class="title">the graveyard.</h2>
+              <div class="title-sub">no one yet.</div>
+            </div>
+            <div class="empty-center">
+              <div class="epi">for the texts you'll never send.</div>
+              <div class="hint">tap + to begin.</div>
+            </div>
+            <div class="plus-orb">+</div>
+          </div>
+          <div class="home-bar"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  </div>
+  <div class="section-rule"></div>
+</section>
+
+<!-- ============================================================
+     03 — POPULATED GRAVEYARD
+============================================================== -->
+<section id="s03" class="screen-section tone-oxblood">
+  <div class="section-inner">
+  <div class="copy">
+    <div class="num">03</div>
+    <h2>four ghosts. <em>one to go.</em></h2>
+    <p>each tile is a small grave: a blurred avatar, a lowercase name, the platform you knew them on, and a quiet count of how many times you wrote.</p>
+    <p>the counter reads <span class="mono dim">"4 of 5 ghosts"</span> on the free tier — never red, never urgent, just a fact.</p>
+    <div class="tag"><span>grid</span><span>blurred faces</span><span>contextual menu: let go</span></div>
+  </div>
+  <div class="stage-wrap">
+    <div class="phone-shadow">
+      <div class="phone">
+        <div class="screen">
+          <div class="island"></div>
+          <div class="status">
+            <span class="time">9:04</span>
+            <span class="icons">
+              <svg width="17" height="11" viewBox="0 0 17 11"><g fill="currentColor"><rect x="0"  y="7" width="3" height="4" rx="0.5"/><rect x="4"  y="5" width="3" height="6" rx="0.5"/><rect x="8"  y="3" width="3" height="8" rx="0.5"/><rect x="12" y="0" width="3" height="11" rx="0.5"/></g></svg>
+              <svg width="16" height="11" viewBox="0 0 16 11" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round"><path d="M2 6 a8 8 0 0 1 12 0"/><path d="M4 8 a5 5 0 0 1 8 0"/><circle cx="8" cy="10" r="0.8" fill="currentColor"/></svg>
+              <svg width="26" height="12" viewBox="0 0 26 12" fill="none"><rect x="0.5" y="0.5" width="22" height="11" rx="2.5" stroke="currentColor"/><rect x="2"   y="2"   width="19" height="8"  rx="1.2" fill="currentColor"/><rect x="23"  y="3.5" width="2"  height="5"  rx="1"   fill="currentColor"/></svg>
+            </span>
+          </div>
+          <div class="stage">
+            <div class="header-row"><span></span><span class="pill">upgrade</span></div>
+            <div class="title-block">
+              <h2 class="title">the graveyard.</h2>
+              <div class="title-sub">4 of 5 ghosts</div>
+            </div>
+            <div class="grid">
+              <div class="tomb"><div class="av">m</div><div class="name">maya</div><div class="where">dating</div><div class="sent">3 sent</div></div>
+              <div class="tomb"><div class="av">j</div><div class="name">j</div><div class="where">messenger</div><div class="sent">1 sent</div></div>
+              <div class="tomb"><div class="av">s</div><div class="name">sam</div><div class="where">friend</div><div class="sent">7 sent</div></div>
+              <div class="tomb"><div class="av">a</div><div class="name">alex</div><div class="where">work</div><div class="sent">1 sent</div></div>
+            </div>
+            <div class="plus-orb">+</div>
+          </div>
+          <div class="home-bar"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  </div>
+  <div class="section-rule"></div>
+</section>
+
+<!-- ============================================================
+     04 — REMINDER
+============================================================== -->
+<section id="s04" class="screen-section flip tone-parch paper">
+  <div class="section-inner">
+  <div class="copy">
+    <div class="num">04</div>
+    <h2>ninety days later. <em>still need it?</em></h2>
+    <p>once a ghost has been quiet for three months, the app asks. it doesn't push, doesn't badge. it just appears the next time you open the door.</p>
+    <p><span class="mono">not yet</span> dismisses. <span class="mono" style="color:var(--warning-red)">let go</span> deletes everything you ever wrote to them, irreversibly.</p>
+    <div class="tag"><span>90 days</span><span>full screen</span><span>destructive · confirmed</span></div>
+  </div>
+  <div class="stage-wrap">
+    <div class="phone-shadow">
+      <div class="phone s-reminder">
+        <div class="screen">
+          <div class="island"></div>
+          <div class="status">
+            <span class="time">9:04</span>
+            <span class="icons">
+              <svg width="17" height="11" viewBox="0 0 17 11"><g fill="currentColor"><rect x="0"  y="7" width="3" height="4" rx="0.5"/><rect x="4"  y="5" width="3" height="6" rx="0.5"/><rect x="8"  y="3" width="3" height="8" rx="0.5"/><rect x="12" y="0" width="3" height="11" rx="0.5"/></g></svg>
+              <svg width="16" height="11" viewBox="0 0 16 11" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round"><path d="M2 6 a8 8 0 0 1 12 0"/><path d="M4 8 a5 5 0 0 1 8 0"/><circle cx="8" cy="10" r="0.8" fill="currentColor"/></svg>
+              <svg width="26" height="12" viewBox="0 0 26 12" fill="none"><rect x="0.5" y="0.5" width="22" height="11" rx="2.5" stroke="currentColor"/><rect x="2"   y="2"   width="19" height="8"  rx="1.2" fill="currentColor"/><rect x="23"  y="3.5" width="2"  height="5"  rx="1"   fill="currentColor"/></svg>
+            </span>
+          </div>
+          <div class="stage">
+            <div class="reminder-question">
+              <div class="top">you wrote to maya 92 days ago.</div>
+              <div class="sub">still need this thread?</div>
+            </div>
+            <div class="reminder-actions">
+              <span class="btn btn--full">not yet</span>
+              <span class="btn btn--full btn--danger">let go</span>
+            </div>
+          </div>
+          <div class="home-bar"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  </div>
+  <div class="section-rule"></div>
+</section>
+
+<!-- ─── pull quote ─── -->
+<aside class="tone-parch paper">
+  <p class="pullquote">
+    "we already hold these conversations in our heads — the app just gives the room a door."
+    <span class="src">— concept doc · §why now</span>
+  </p>
+</aside>
+
+<!-- ============================================================
+     05 — COMPOSE
+============================================================== -->
+<section id="s05" class="screen-section tone-lavender paper">
+  <div class="section-inner">
+  <div class="copy">
+    <div class="num">05</div>
+    <h2>messenger. <em>but only one side.</em></h2>
+    <p>the other person's bubbles never fill. they hover empty in the upper-left, dotted, suggestive — placeholders for words that will never come.</p>
+    <p>your bubbles are blue. there is no send button. you hold the bar above the keyboard for 1.5 seconds, then swipe up. the message lifts off and disintegrates.</p>
+    <p>if <em>imagined reply</em> is on, the app assembles a fictional response from word banks. it's clearly marked as imagined; the real person is never contacted, never aware, never involved.</p>
+    <div class="tag"><span>hold + swipe up</span><span>private screen</span><span>imagined reply · optional</span></div>
+  </div>
+  <div class="stage-wrap">
+    <div class="phone-shadow">
+      <div class="phone">
+        <div class="screen">
+          <div class="island"></div>
+          <div class="status">
+            <span class="time">9:06</span>
+            <span class="icons">
+              <svg width="17" height="11" viewBox="0 0 17 11"><g fill="currentColor"><rect x="0"  y="7" width="3" height="4" rx="0.5"/><rect x="4"  y="5" width="3" height="6" rx="0.5"/><rect x="8"  y="3" width="3" height="8" rx="0.5"/><rect x="12" y="0" width="3" height="11" rx="0.5"/></g></svg>
+              <svg width="16" height="11" viewBox="0 0 16 11" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round"><path d="M2 6 a8 8 0 0 1 12 0"/><path d="M4 8 a5 5 0 0 1 8 0"/><circle cx="8" cy="10" r="0.8" fill="currentColor"/></svg>
+              <svg width="26" height="12" viewBox="0 0 26 12" fill="none"><rect x="0.5" y="0.5" width="22" height="11" rx="2.5" stroke="currentColor"/><rect x="2"   y="2"   width="19" height="8"  rx="1.2" fill="currentColor"/><rect x="23"  y="3.5" width="2"  height="5"  rx="1"   fill="currentColor"/></svg>
+            </span>
+          </div>
+          <div class="stage" style="padding:0">
+            <div class="compose-header">
+              <div class="av">m</div>
+              <div>
+                <div class="who">maya</div>
+                <div class="where">messenger</div>
+              </div>
+            </div>
+            <div class="compose-body">
+              <div class="epigraph">this is the only safe place to say it.</div>
+              <div class="placeholder-bubble w-a"></div>
+              <div class="placeholder-bubble w-b"></div>
+              <div class="bubble me">i still don't know why you stopped answering.</div>
+              <div class="bubble me">i guess i kept it kinda warm just in case.</div>
+              <div class="bubble them">honestly ive been thinking about us lately 🥲</div>
+              <div class="bubble them">i didnt know how to say any of this</div>
+              <div class="typing"><span></span><span></span><span></span></div>
+            </div>
+            <div class="input-area">
+              <div class="send-handle">
+                <div class="lab">hold here, then swipe up</div>
+                <div class="bar"></div>
+              </div>
+              <div class="input-box">say it.</div>
+            </div>
+          </div>
+          <div class="home-bar"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  </div>
+  <div class="section-rule"></div>
+</section>
+
+<!-- ============================================================
+     06 — SENDING / DISINTEGRATION
+============================================================== -->
+<section id="s06" class="screen-section flip tone-slate">
+  <div class="section-inner">
+  <div class="copy">
+    <div class="num">06</div>
+    <h2>four seconds. <em>then gone.</em></h2>
+    <p>after you swipe up, the bubble lifts away from the conversation, blurs, and breaks into ~140 cold-blue particles that drift upward and dissolve.</p>
+    <p>the animation cannot be skipped. you watch the words leave. a single word — <span class="mono">gone.</span> — replaces them.</p>
+    <p>the message is now permanently saved to that thread. but the ritual happens every time — every send is its own small ceremony.</p>
+    <div class="tag"><span>4.0s</span><span>unskippable</span><span>tap haptic</span></div>
+  </div>
+  <div class="stage-wrap">
+    <div class="phone-shadow">
+      <div class="phone s-sending">
+        <div class="screen">
+          <div class="island"></div>
+          <div class="status">
+            <span class="time">9:06</span>
+            <span class="icons">
+              <svg width="17" height="11" viewBox="0 0 17 11"><g fill="currentColor"><rect x="0"  y="7" width="3" height="4" rx="0.5"/><rect x="4"  y="5" width="3" height="6" rx="0.5"/><rect x="8"  y="3" width="3" height="8" rx="0.5"/><rect x="12" y="0" width="3" height="11" rx="0.5"/></g></svg>
+              <svg width="16" height="11" viewBox="0 0 16 11" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round"><path d="M2 6 a8 8 0 0 1 12 0"/><path d="M4 8 a5 5 0 0 1 8 0"/><circle cx="8" cy="10" r="0.8" fill="currentColor"/></svg>
+              <svg width="26" height="12" viewBox="0 0 26 12" fill="none"><rect x="0.5" y="0.5" width="22" height="11" rx="2.5" stroke="currentColor"/><rect x="2"   y="2"   width="19" height="8"  rx="1.2" fill="currentColor"/><rect x="23"  y="3.5" width="2"  height="5"  rx="1"   fill="currentColor"/></svg>
+            </span>
+          </div>
+          <div class="stage">
+            <div class="ghost-bubble-stage">
+              <div class="ghost-bubble">i should have said this sooner.</div>
+              <div class="particles" id="particles"></div>
+            </div>
+            <div class="gone-label">gone.</div>
+          </div>
+          <div class="home-bar"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  </div>
+  <div class="section-rule"></div>
+</section>
+
+<!-- ============================================================
+     07 — NEW GHOST
+============================================================== -->
+<section id="s07" class="screen-section tone-taupe paper">
+  <div class="section-inner">
+  <div class="copy">
+    <div class="num">07</div>
+    <h2>who is this for?</h2>
+    <p>creating a ghost is one form: a name, an optional photo (blurred forever), and the platform you knew them on.</p>
+    <p><em>imagined reply</em> is opt-in and off by default. when off, no replies appear — true to the original promise. when on, the app assembles a fictional response from word banks: openers, fillers, hedges. the reply is clearly marked as <span class="mono">imagined</span>; never sent, never seen by the real person, never their words.</p>
+    <div class="tag"><span>blurred faces</span><span>local only</span><span>imagined reply · off by default</span></div>
+  </div>
+  <div class="stage-wrap">
+    <div class="phone-shadow">
+      <div class="phone s-newghost">
+        <div class="screen">
+          <div class="island"></div>
+          <div class="status">
+            <span class="time">9:06</span>
+            <span class="icons">
+              <svg width="17" height="11" viewBox="0 0 17 11"><g fill="currentColor"><rect x="0"  y="7" width="3" height="4" rx="0.5"/><rect x="4"  y="5" width="3" height="6" rx="0.5"/><rect x="8"  y="3" width="3" height="8" rx="0.5"/><rect x="12" y="0" width="3" height="11" rx="0.5"/></g></svg>
+              <svg width="16" height="11" viewBox="0 0 16 11" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round"><path d="M2 6 a8 8 0 0 1 12 0"/><path d="M4 8 a5 5 0 0 1 8 0"/><circle cx="8" cy="10" r="0.8" fill="currentColor"/></svg>
+              <svg width="26" height="12" viewBox="0 0 26 12" fill="none"><rect x="0.5" y="0.5" width="22" height="11" rx="2.5" stroke="currentColor"/><rect x="2"   y="2"   width="19" height="8"  rx="1.2" fill="currentColor"/><rect x="23"  y="3.5" width="2"  height="5"  rx="1"   fill="currentColor"/></svg>
+            </span>
+          </div>
+          <div class="stage">
+            <div class="ng-close">close</div>
+            <div class="mono dim" style="font-size:12px;">who is this for?</div>
+
+            <div class="ng-section">
+              <div class="lab">name</div>
+              <div class="ng-name-input">maya</div>
+            </div>
+
+            <div class="ng-section">
+              <div class="lab">photo (optional, blurred forever)</div>
+              <div class="ng-photo-row">
+                <div class="ng-photo-circle">+</div>
+                <div class="lab2">add face</div>
+              </div>
+            </div>
+
+            <div class="ng-section">
+              <div class="lab">where</div>
+              <div class="ng-platform">
+                <div class="row"><span>dating app</span><span class="radio"></span></div>
+                <div class="row"><span>messenger</span><span class="radio"><span class="dot"></span></span></div>
+                <div class="row"><span>encrypted chat</span><span class="radio"></span></div>
+                <div class="row"><span>work</span><span class="radio"></span></div>
+                <div class="row"><span>friend</span><span class="radio"></span></div>
+              </div>
+            </div>
+
+            <div class="ng-section">
+              <div class="lab">imagined reply</div>
+              <div class="haunt-row">
+                <div class="check"></div>
+                <div>
+                  <div class="text">show imagined replies</div>
+                  <div class="desc">fictional. words assembled on your phone, never theirs, never sent. clearly labeled "imagined". off by default.</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="ng-cta">open the channel</div>
+          </div>
+          <div class="home-bar"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  </div>
+  <div class="section-rule"></div>
+</section>
+
+<!-- ============================================================
+     08 — PAYWALL
+============================================================== -->
+<section id="s08" class="screen-section flip tone-forest">
+  <div class="section-inner">
+  <div class="copy">
+    <div class="num">08</div>
+    <h2>the graveyard fills up at five.</h2>
+    <p>the first five ghosts are free. forever. for the sixth, the app asks for $9.99 — once, paid one time, kept forever. no subscription, no renewal. that is the only commercial moment in the product.</p>
+    <p>no ads, no upsell carousels, no urgency. one button, one price, one promise: nothing about your relationships is ever sold or syncs anywhere.</p>
+    <div class="tag"><span>$9.99 · once</span><span>storekit 2</span><span>no ads · no data sale</span></div>
+  </div>
+  <div class="stage-wrap">
+    <div class="phone-shadow">
+      <div class="phone s-paywall">
+        <div class="screen">
+          <div class="island"></div>
+          <div class="status">
+            <span class="time">9:06</span>
+            <span class="icons">
+              <svg width="17" height="11" viewBox="0 0 17 11"><g fill="currentColor"><rect x="0"  y="7" width="3" height="4" rx="0.5"/><rect x="4"  y="5" width="3" height="6" rx="0.5"/><rect x="8"  y="3" width="3" height="8" rx="0.5"/><rect x="12" y="0" width="3" height="11" rx="0.5"/></g></svg>
+              <svg width="16" height="11" viewBox="0 0 16 11" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round"><path d="M2 6 a8 8 0 0 1 12 0"/><path d="M4 8 a5 5 0 0 1 8 0"/><circle cx="8" cy="10" r="0.8" fill="currentColor"/></svg>
+              <svg width="26" height="12" viewBox="0 0 26 12" fill="none"><rect x="0.5" y="0.5" width="22" height="11" rx="2.5" stroke="currentColor"/><rect x="2"   y="2"   width="19" height="8"  rx="1.2" fill="currentColor"/><rect x="23"  y="3.5" width="2"  height="5"  rx="1"   fill="currentColor"/></svg>
+            </span>
+          </div>
+          <div class="stage">
+            <h2 class="pw-headline">the graveyard fills up at 5.</h2>
+            <div class="pw-sub">for what it costs, it doesn't.</div>
+            <div class="pw-bullets">
+              <div class="b"><span class="em">—</span><span>unlimited ghosts.</span></div>
+              <div class="b"><span class="em">—</span><span>custom send animations.</span></div>
+              <div class="b"><span class="em">—</span><span>export thread to image.</span></div>
+              <div class="b"><span class="em">—</span><span>no ads. nothing leaves your phone.</span></div>
+            </div>
+            <span class="btn btn--full">$9.99 · once</span>
+            <div class="pw-foot"><span>restore</span><span>not now</span></div>
+            <div class="pw-fine">one-time purchase. no subscription. no renewal.</div>
+          </div>
+          <div class="home-bar"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     09 — FINE PRINT (safety + legal + export)
+============================================================== -->
+<section id="s09" class="s-fine tone-bone paper" style="position:relative;">
+  <div class="fine-inner">
+    <div class="num">09</div>
+    <h2>what ghost is, <em>and isn't.</em></h2>
+    <div class="grid2">
+      <div>
+        <p><strong>ghost is a private writing app.</strong> not therapy, not counseling, not a substitute for talking to someone who can help. if you're in crisis, please reach out — <a href="https://988lifeline.org" target="_blank" rel="noopener">988 (us)</a> or <a href="https://findahelpline.com" target="_blank" rel="noopener">findahelpline.com (global)</a>.</p>
+        <p><strong>imagined replies are fictional.</strong> assembled locally from word banks and clearly labeled "imagined". the real person is never contacted, never aware, never involved. nothing is sent to anyone, ever.</p>
+      </div>
+      <div>
+        <p><strong>your data stays on the phone.</strong> no servers, no analytics, no telemetry, no tracking. ghost cannot read what you wrote — there is no "ghost" reading on the other side, only your own device.</p>
+        <p><strong>export is optional.</strong> save any thread to a still image kept in your photo library. ghost never auto-posts, never shares, never syncs. if a thread leaves the app, you put it there.</p>
+      </div>
+    </div>
+    <div class="legal-links">
+      <a href="legal/privacy.html">privacy policy</a>
+      <a href="legal/terms.html">terms of use</a>
+      <a href="legal/eula.html">eula</a>
+      <a href="legal/imagined-reply-disclosure.html">imagined-reply disclosure</a>
+      <a href="mailto:hello@ghost.app">contact</a>
+    </div>
+  </div>
+  <div class="section-rule"></div>
+</section>
+
+<!-- ─── footer ──────────────────────────────────────── -->
+<footer class="foot">
+  <div class="foot-inner">
+    <div class="left">
+      <span><strong>GHOST</strong> · for the texts you'll never send.</span>
+    </div>
+    <div class="left">
+      <a href="legal/privacy.html">privacy</a>
+      <a href="legal/terms.html">terms</a>
+      <a href="legal/eula.html">eula</a>
+      <a href="mailto:hello@ghost.app">contact</a>
+    </div>
+    <div>built locally · no analytics · no servers</div>
+  </div>
+</footer>
+
+<!-- ─── particle generator for the sending screen ───── -->
+<script>
+  (function () {
+    const host = document.getElementById('particles');
+    if (!host) return;
+    const N = 110;
+    for (let i = 0; i < N; i++) {
+      const p = document.createElement('i');
+      const angle = Math.random() * Math.PI;             // upper hemisphere
+      const dist  = 60 + Math.random() * 180;
+      const tx = Math.cos(angle) * dist * (Math.random() < 0.5 ? -1 : 1);
+      const ty = -Math.abs(Math.sin(angle)) * dist - 30;
+      p.style.setProperty('--tx', tx + 'px');
+      p.style.setProperty('--ty', ty + 'px');
+      p.style.animationDelay = (Math.random() * 2.4) + 's';
+      p.style.animationDuration = (1.6 + Math.random() * 1.6) + 's';
+      const size = 1.5 + Math.random() * 2.2;
+      p.style.width = size + 'px';
+      p.style.height = size + 'px';
+      host.appendChild(p);
+    }
+  })();
+</script>
+
+</body>
+</html>

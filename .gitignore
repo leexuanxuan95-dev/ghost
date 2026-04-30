@@ -1,0 +1,43 @@
+# Xcode
+build/
+DerivedData/
+*.xcworkspace/xcuserdata/
+*.xcodeproj/xcuserdata/
+*.xcodeproj/project.xcworkspace/xcuserdata/
+*.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/
+*.xccheckout
+*.moved-aside
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Swift Package Manager
+.swiftpm/
+Packages/
+Package.pins
+Package.resolved
+.build/
+
+# CocoaPods
+Pods/
+Podfile.lock
+
+# macOS
+.DS_Store
+._*
+.AppleDouble
+.LSOverride
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Site build artifact (created by GitHub Actions, not committed)
+_site/
+
+# Generated icon scratch (kept under /tmp during dev)
+/tmp/make-ghost-icon.swift

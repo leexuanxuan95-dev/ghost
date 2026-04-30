@@ -1,0 +1,126 @@
+# Publishes the marketing page + legal/ folder to GitHub Pages on every
+# push to main. Only the files we want public are copied into the build
+# artifact — Swift sources, the Xcode project, and the launch/ kit stay
+# inside the repo and are never served.
+#
+# First-time setup:
+#   1. Push this repo to GitHub.
+#   2. Repo → Settings → Pages → Source: GitHub Actions.
+#   3. Push to main (or trigger this workflow manually). After ~90s the
+#      site is live at https://<user>.github.io/<repo>/.
+#   4. (Optional) Custom domain — uncomment the CNAME line below, set
+#      "ghost.app" to your domain, configure the DNS records GitHub asks
+#      for in Settings → Pages, and re-deploy.
+
+name: Deploy site
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "pages.html"
+      - "legal/**"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Cancel in-flight deploys on rapid pushes so we don't ship stale content.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Assemble static site
+        run: |
+          set -eu
+          rm -rf _site
+          mkdir -p _site
+
+          # The marketing page is served as the index.
+          cp pages.html _site/index.html
+
+          # Legal docs (privacy / terms / eula / imagined-reply disclosure).
+          cp -r legal _site/legal
+
+          # Friendly 404 — keeps the brand voice if a stray link 404s.
+          cat > _site/404.html <<'HTML'
+          <!doctype html>
+          <html lang="en">
+          <head>
+            <meta charset="utf-8">
+            <title>not here · ghost</title>
+            <meta name="viewport" content="width=device-width,initial-scale=1">
+            <style>
+              body { margin:0; background:#ede4d2; color:#1a1a1c;
+                     font-family: -apple-system, system-ui, sans-serif;
+                     min-height:100vh; display:flex; align-items:center;
+                     justify-content:center; }
+              .wrap { max-width:520px; padding:40px; text-align:center; }
+              h1 { font-weight:200; font-size:96px; margin:0;
+                   letter-spacing:-0.04em; line-height:0.9; }
+              h1 em { font-family:"EB Garamond",Garamond,serif;
+                      font-style:italic; font-weight:400; color:#4a1f1f; }
+              p { margin:18px 0 28px; color:rgba(26,26,28,0.6); }
+              a { font-family:ui-monospace,Menlo,monospace; font-size:11px;
+                  letter-spacing:0.18em; color:rgba(26,26,28,0.6);
+                  text-decoration:underline; text-underline-offset:2px; }
+            </style>
+          </head>
+          <body>
+            <div class="wrap">
+              <h1>nothing<em>.</em></h1>
+              <p>this page is gone, or never was.</p>
+              <a href="/">← ghost.</a>
+            </div>
+          </body>
+          </html>
+          HTML
+
+          # Custom domain — uncomment and edit when DNS is configured:
+          # echo "ghost.app" > _site/CNAME
+
+      - name: Force Pages source to "GitHub Actions"
+        # configure-pages with enablement:true enables Pages but does NOT
+        # change build_type if Pages was already on as "deploy from branch".
+        # Without this PUT, GitHub keeps running Jekyll on README.md instead
+        # of serving our workflow artifact. The 422 fallback ignores the
+        # case where Pages was created in the same run by the next step.
+        run: |
+          curl -fsS -X PUT \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${{ github.repository }}/pages" \
+            -d '{"build_type":"workflow"}' \
+            || echo "(pages config update skipped — likely first run, configure-pages will create it)"
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
